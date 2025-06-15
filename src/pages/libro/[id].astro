@@ -1,0 +1,77 @@
+---
+import Layout from '../../layouts/Layout.astro';
+// Para usar el boton de compra del .env
+import { SHOW_BUY_BUTTON } from 'astro:env/server';
+
+// Render para renderizar el contenido
+import { getCollection, render,type CollectionEntry } from 'astro:content';
+
+import BookScore from '../../components/BookScore.astro';
+import AmazonLogo from '../../components/AmazonLogo.astro';
+import BuyButton from '../../components/BuyButton.astro';
+type BookEntry = CollectionEntry<'books'>;
+
+// Para generar las rutas dinámicas de los libros, necesitamos obtener la colección de libros.
+export async function getStaticPaths() {
+    const books = await getCollection('books');
+    return books.map((book: BookEntry) => ({
+        params: { id: book.slug },
+        props: { book },
+    }));
+}
+
+// Y aca devolvemos el objeto de cada elemento
+const { book } = Astro.props;
+const { data, slug } = book; // aca agregamos el slug para que cada libro tenga su propia transición
+const { title, author, img, readtime, description, buy } = data;
+
+// Y con esto renderizamos el contenido
+const { Content } = await render(book);
+
+export const prerender = true;
+---
+
+<Layout title=`${title} -Dev Books`>
+    <div class="flex gap-12">
+        <aside class="flex flex-col items-center gap-4">
+            <!-- windowa + . para emojis -->
+            <a href="/" class="hover:underline opacity-70">← Volver atrás</a>
+
+            <!-- Pegamos aca el img-{slug} tambien para que cada imagen tenga su propia transición o id -->
+            <img transition:name={`img-${slug}`} class="rounded w-72 h-auto" src={`/${img}`} alt={title}>
+
+            <!-- Aca usamos el componente BookScore.astro para mostrar la puntuación del libro, junto al server:defer (isla de servidor) para que este valor no sea estatico -->
+            <BookScore server:defer id={slug}>
+                <span slot="fallback" class="text-xs opacity-70">Cargando puntuación...</span>
+            </BookScore>
+            
+            <!-- usando el boton de compra del .env -->
+            {
+                SHOW_BUY_BUTTON && <BuyButton server:defer buy={buy} />
+            }
+<!-- 
+            {
+                SHOW_BUY_BUTTON && ( 
+                    // con error pero funciona
+                    // aunque para que no salga error con buy.spain, usamos el link directo de los archivos .md
+                    <a 
+                    href={buy.spain}
+                    title="Comprar libro en EVATISSAC"
+                    target="_blank"
+                    class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition">
+                        Comprar en Amazon España
+                    <AmazonLogo />
+                    </a>
+                )
+            } -->
+        </aside>
+
+        <main class="max-w-3xl">
+            <h1 transition:name={`title-${slug}`} class="text-4xl font-bold mb-4">{title}</h1>
+            <!-- Con prose se puede usar el paquete de tailwindcss/typography para mejorar el contenido de los libros. -->
+            <div class="prose prose-invert">
+                <Content />
+            </div>
+        </main>
+    </div>
+</Layout>

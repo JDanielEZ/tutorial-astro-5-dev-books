@@ -1,0 +1,10 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+body {
+	@apply grid place-content-center p-20;
+
+}
+
+body > h1 {
+    @apply container;
+}
